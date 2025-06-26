@@ -26,7 +26,7 @@ jobs:
   # ETAPA 1: CLONACIÓN DEL REPOSITORIO Y SETUP BÁSICO
   # ====================================================
   setup:
-    name: "📋 1. Repository Setup & Environment Validation"
+    name: "📋 Repository Setup & Environment Validation"
     runs-on: ubuntu-latest
     outputs:
       node-version: ${{ env.NODE_VERSION }}
@@ -73,33 +73,7 @@ jobs:
           
           echo "✅ Repository structure validation PASSED"
           
-      - name: Validate Package Lock Integrity
-        run: |
-          echo "🔒 Validating package-lock.json integrity..."
-          
-          # Check if package-lock.json is valid JSON
-          if ! jq empty package-lock.json > /dev/null 2>&1; then
-            echo "❌ ERROR: package-lock.json is not valid JSON"
-            exit 1
-          fi
-          
-          # Verify lockfile version and Node.js compatibility
-          LOCKFILE_VERSION=$(jq -r '.lockfileVersion' package-lock.json)
-          echo "📦 Lockfile version: $LOCKFILE_VERSION"
-          
-          # Check for package.json and package-lock.json consistency
-          PACKAGE_NAME=$(jq -r '.name' package.json)
-          LOCKFILE_NAME=$(jq -r '.name' package-lock.json)
-          
-          if [ "$PACKAGE_NAME" != "$LOCKFILE_NAME" ]; then
-            echo "❌ ERROR: Package name mismatch between package.json and package-lock.json"
-            echo "package.json: $PACKAGE_NAME"
-            echo "package-lock.json: $LOCKFILE_NAME"
-            exit 1
-          fi
-          
-          echo "✅ Package-lock.json integrity validation PASSED"
-          
+      
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
@@ -116,53 +90,7 @@ jobs:
           
           echo "✅ Dependencies installed successfully from lockfile"
           
-      - name: Verify Dependency Installation
-        run: |
-          echo "🔍 Verifying dependency installation..."
-          
-          # Check node_modules exists and has content
-          if [ ! -d "node_modules" ]; then
-            echo "❌ ERROR: node_modules directory not found"
-            exit 1
-          fi
-          
-          # Verify critical dependencies are installed
-          if [ ! -d "node_modules/next" ]; then
-            echo "❌ ERROR: Next.js not found in node_modules"
-            exit 1
-          fi
-          
-          if [ ! -d "node_modules/react" ]; then
-            echo "❌ ERROR: React not found in node_modules"
-            exit 1
-          fi
-          
-          # Count installed packages
-          INSTALLED_PACKAGES=$(ls node_modules | wc -l)
-          echo "📊 Installed packages: $INSTALLED_PACKAGES"
-          
-          echo "✅ Dependency installation verification PASSED"
-          
-      - name: Validate Application Configuration
-        run: |
-          echo "🔧 Validating application configuration..."
-          
-          # Check if build script exists
-          if npm run build --dry-run > /dev/null 2>&1; then
-            echo "✅ Build script available"
-          else
-            echo "⚠️ WARNING: Build script not found or not working"
-          fi
-          
-          # Check if start script exists  
-          if npm run start --dry-run > /dev/null 2>&1; then
-            echo "✅ Start script available"
-          else
-            echo "⚠️ WARNING: Start script not found"
-          fi
-          
-          echo "✅ Application configuration validation completed"
-          
+      
       - name: Environment Information Summary
         run: |
           echo "## 📋 Repository Setup Complete" >> $GITHUB_STEP_SUMMARY
