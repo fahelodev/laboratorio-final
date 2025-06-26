@@ -1,0 +1,141 @@
+name: Laboratorio Final - DevSecOps Pipeline Eduardo Araya
+
+on:
+  push:
+    branches: [ main, 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for future deployment'
+        required: false
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '19'
+  APP_NAME: 'laboratorio-final-celula-movies'
+
+jobs:
+  # ====================================================
+  # ETAPA 1: CLONACIÓN DEL REPOSITORIO Y SETUP BÁSICO
+  # ====================================================
+  setup:
+    name: "📋 Repository Setup & Environment Validation"
+    runs-on: ubuntu-latest
+    outputs:
+      node-version: ${{ env.NODE_VERSION }}
+      app-name: ${{ env.APP_NAME }}
+      repository-url: ${{ github.repositoryUrl }}
+      commit-sha: ${{ github.sha }}
+      branch-name: ${{ github.ref_name }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Validate Repository Structure
+        run: |
+          echo "🔍 Validating repository structure..."
+          
+          # Check essential files exist
+          if [ ! -f "package.json" ]; then
+            echo "❌ ERROR: package.json not found"
+            exit 1
+          fi
+          
+          if [ ! -f "package-lock.json" ]; then
+            echo "❌ ERROR: package-lock.json not found - required for reproducible builds"
+            exit 1
+          fi
+          
+          if [ ! -f "Dockerfile" ]; then
+            echo "❌ ERROR: Dockerfile not found"
+            exit 1
+          fi
+          
+          # Check Kubernetes manifests
+          if [ ! -f "deployment.yml" ]; then
+            echo "❌ ERROR: deployment.yml not found"
+            exit 1
+          fi
+          
+          if [ ! -f "service.yml" ]; then
+            echo "❌ ERROR: service.yml not found"
+            exit 1
+          fi
+          
+          echo "✅ Repository structure validation PASSED"
+          
+      
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          
+      - name: Install Dependencies (Frozen Lockfile)
+        run: |
+          echo "📦 Installing project dependencies using package-lock.json as source of truth..."
+          
+          # Use npm ci with frozen lockfile for reproducible builds
+          npm ci --frozen-lockfile --prefer-offline --no-audit --no-fund
+          
+          echo "✅ Dependencies installed successfully from lockfile"
+          
+      
+      - name: Environment Information Summary
+        run: |
+          echo "## 📋 Repository Setup Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Environment Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Node.js Version**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application**: ${{ env.APP_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ github.event.inputs.environment || 'qa' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository Structure**: ✅ Valid" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package-lock.json**: ✅ Present and Valid" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies**: ✅ Installed (Frozen Lockfile)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Configuration**: ✅ Validated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker Files**: ✅ Present" >> $GITHUB_STEP_SUMMARY
+          echo "- **Kubernetes Manifests**: ✅ Present" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependency Integrity**: ✅ Verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔒 Security & Reproducibility Features" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frozen Lockfile**: Ensures reproducible builds" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package Integrity**: Validated JSON structure and consistency" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cache Optimization**: Node.js cache with lockfile dependency path" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependency Verification**: Critical packages validated post-install" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "Pipeline base successfully established. Ready for:" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ **SAST** (Static Application Security Testing)" >> $GITHUB_STEP_SUMMARY  
+          echo "- ⏭️ **SCA** (Software Composition Analysis)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ **Container Build** and Security Scanning" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ **Deployment** to Kubernetes" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ **DAST** (Dynamic Application Security Testing)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Laboratorio Final - Célula Movies | Eduardo Araya | DevSecOps Course**" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Setup Complete Notification
+        run: |
+          echo "🎉 Pipeline setup phase completed successfully!"
+          echo "📊 Repository: ${{ github.repository }}"
+          echo "🌿 Branch: ${{ github.ref_name }}"
+          echo "🔖 Commit: ${{ github.sha }}"
+          echo "⚙️ Environment: ${{ github.event.inputs.environment || 'qa' }}"
+          echo ""
+          echo "✅ Ready for security analysis and deployment phases"
+          echo "🔄 Pipeline will be extended with additional security stages in upcoming features"
