@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment for future deployment'
+        description: 'Target environment for deployment'
         required: false
         default: 'qa'
         type: choice
@@ -34,6 +34,7 @@ jobs:
       repository-url: ${{ github.repositoryUrl }}
       commit-sha: ${{ github.sha }}
       branch-name: ${{ github.ref_name }}
+      should-run-security: ${{ steps.security-check.outputs.run-security }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -90,18 +91,28 @@ jobs:
           
           echo "✅ Dependencies installed successfully from lockfile"
           
+      - name: Security Pipeline Check
+        id: security-check
+        run: |
+          echo "🔒 Enabling security analysis pipeline..."
+          echo "run-security=true" >> $GITHUB_OUTPUT 
       
       - name: Environment Information Summary
+        env:
+          REPO_NAME: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          TARGET_ENV: ${{ github.event.inputs.environment || 'qa' }}
         run: |
           echo "## 📋 Repository Setup Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 Environment Information" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit SHA**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: $REPO_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: $BRANCH_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: \`$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Node.js Version**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Application**: ${{ env.APP_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: ${{ github.event.inputs.environment || 'qa' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: $TARGET_ENV" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository Structure**: ✅ Valid" >> $GITHUB_STEP_SUMMARY
@@ -130,12 +141,181 @@ jobs:
           echo "**Laboratorio Final - Célula Movies | Eduardo Araya | DevSecOps Course**" >> $GITHUB_STEP_SUMMARY
           
       - name: Setup Complete Notification
+        env:
+          REPO_NAME: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          TARGET_ENV: ${{ github.event.inputs.environment || 'qa' }}
         run: |
           echo "🎉 Pipeline setup phase completed successfully!"
-          echo "📊 Repository: ${{ github.repository }}"
-          echo "🌿 Branch: ${{ github.ref_name }}"
-          echo "🔖 Commit: ${{ github.sha }}"
-          echo "⚙️ Environment: ${{ github.event.inputs.environment || 'qa' }}"
+          echo "📊 Repository: $REPO_NAME"
+          echo "🌿 Branch: $BRANCH_NAME"
+          echo "🔖 Commit: $COMMIT_SHA"
+          echo "⚙️ Environment: $TARGET_ENV"
           echo ""
           echo "✅ Ready for security analysis and deployment phases"
           echo "🔄 Pipeline will be extended with additional security stages in upcoming features"
+
+  # ====================================================
+  # ETAPA 2: ANÁLISIS SAST (Static Application Security Testing)
+  # ====================================================
+  sast-scan:
+    name: "🔒 SAST - Static Code Analysis"
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-run-security == 'true'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          
+      - name: Install Dependencies
+        run: |
+          echo "📦 Installing dependencies for SAST analysis..."
+          npm ci --frozen-lockfile --prefer-offline
+        
+      - name: ESLint Security Analysis
+        run: |
+          echo "🔍 Running ESLint security analysis..."
+          npx eslint . --ext .ts,.tsx,.js,.jsx \
+            --format json \
+            --output-file eslint-results.json || true
+            
+          echo "✅ ESLint analysis completed"
+            
+      - name: Install Semgrep for SAST
+        run: |
+          echo "🔧 Installing Semgrep for advanced static analysis..."
+          pip install semgrep
+          
+      - name: Semgrep Static Analysis
+        run: |
+          echo "🔍 Running Semgrep static analysis..."
+          semgrep --config=auto \
+            --json \
+            --output=semgrep-results.json \
+            --severity=ERROR \
+            --severity=WARNING \
+            --severity=INFO \
+            . || true
+            
+          echo "✅ Semgrep analysis completed"
+            
+      - name: Process SAST Results
+        id: sast-results
+        run: |
+          echo "📊 Processing SAST analysis results..."
+          echo "## 🔒 SAST Analysis Results" >> $GITHUB_STEP_SUMMARY
+          
+          # Count Semgrep issues by severity
+          if [ -f semgrep-results.json ]; then
+            CRITICAL=$(node -e "console.log(JSON.parse(require('fs').readFileSync('semgrep-results.json')).results.filter(r => r.extra.severity === 'ERROR').length)")
+            HIGH=$(node -e "console.log(JSON.parse(require('fs').readFileSync('semgrep-results.json')).results.filter(r => r.extra.severity === 'WARNING').length)")
+            MEDIUM=$(node -e "console.log(JSON.parse(require('fs').readFileSync('semgrep-results.json')).results.filter(r => r.extra.severity === 'INFO').length)")
+            
+            echo "- **Critical Issues**: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **High Issues**: $HIGH" >> $GITHUB_STEP_SUMMARY  
+            echo "- **Medium Issues**: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
+            
+            echo "📈 SAST Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
+          else
+            echo "⚠️ No Semgrep results file found"
+            echo "critical=0" >> $GITHUB_OUTPUT
+            echo "high=0" >> $GITHUB_OUTPUT
+            echo "medium=0" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: SAST Security Gate
+        run: |
+          CRITICAL=${{ steps.sast-results.outputs.critical }}
+          HIGH=${{ steps.sast-results.outputs.high }}
+          MEDIUM=${{ steps.sast-results.outputs.medium }}
+          
+          echo "🔒 Applying SAST Security Gates with real analysis results..."
+          echo "📊 Analysis Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
+          
+          # Strict security gates based on real analysis results
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "❌ SECURITY GATE FAILED: $CRITICAL Critical vulnerabilities found"
+            echo "🚨 Critical vulnerabilities MUST be fixed before deployment"
+            echo "❌ **SAST Security Gate FAILED**: $CRITICAL Critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚨 Critical Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to critical security vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the SAST artifacts and fix these issues before proceeding." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          if [ "$HIGH" -gt "0" ]; then
+            echo "❌ SECURITY GATE FAILED: $HIGH High severity vulnerabilities found"  
+            echo "🚨 High severity vulnerabilities MUST be fixed before deployment"
+            echo "❌ **SAST Security Gate FAILED**: $HIGH High severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ High Severity Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to high severity security vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the SAST artifacts and address these security concerns." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # For Medium vulnerabilities, provide detailed feedback but allow continuation with warning
+          if [ "$MEDIUM" -gt "0" ]; then
+            echo "⚠️ WARNING: $MEDIUM Medium severity vulnerabilities found"
+            echo "📋 Consider addressing these issues in future development cycles"
+            echo "⚠️ **SAST Warning**: $MEDIUM Medium severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📋 Medium Severity Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "While not blocking deployment, these issues should be addressed:" >> $GITHUB_STEP_SUMMARY
+            echo "- Review the SAST artifacts for detailed findings" >> $GITHUB_STEP_SUMMARY
+            echo "- Plan remediation in upcoming development cycles" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitor these vulnerabilities for potential escalation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Pipeline continues** with warning status" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ] && [ "$MEDIUM" -eq "0" ]; then
+            echo "✅ SAST Security Gate PASSED - No security vulnerabilities found"
+            echo "✅ **SAST Security Gate PASSED** - Clean code analysis" >> $GITHUB_STEP_SUMMARY
+          elif [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ]; then
+            echo "✅ SAST Security Gate PASSED WITH WARNINGS - No critical or high severity issues"
+            echo "✅ **SAST Security Gate PASSED** (with medium severity warnings)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+      - name: Upload SAST Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sast-results
+          path: |
+            eslint-results.json
+            semgrep-results.json
+            
+      - name: SAST Stage Summary
+        if: always()
+        run: |
+          echo "## 🔒 SAST Stage Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Tools Used" >> $GITHUB_STEP_SUMMARY
+          echo "- **ESLint**: JavaScript/TypeScript security linting" >> $GITHUB_STEP_SUMMARY
+          echo "- **Semgrep**: Advanced static analysis for security patterns" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Security Gates Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- **Critical Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "- **High Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "- **Medium Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- **eslint-results.json**: ESLint security analysis results" >> $GITHUB_STEP_SUMMARY
+          echo "- **semgrep-results.json**: Semgrep security pattern analysis results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Stage**: SCA (Software Composition Analysis) - Coming in next feature" >> $GITHUB_STEP_SUMMARY

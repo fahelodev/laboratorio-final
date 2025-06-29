@@ -1,9 +1,9 @@
-apiVersion: apps/v1
+apiVersion: v1
 kind: Service
 metadata:
-  name: Reddit-clone-service
+  name: laboratorio-final-service
   labels:
-    app: kuber-project
+    app: laboratorio-final-celula-movies
 spec:
   type: NodePort
   ports:
@@ -11,4 +11,4 @@ spec:
     targetPort: 3000
     nodePort: 31000
   selector:
-    app: kuber-project
+    app: laboratorio-final-celula-movies
