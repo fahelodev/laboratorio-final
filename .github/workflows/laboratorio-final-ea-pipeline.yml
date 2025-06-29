@@ -319,3 +319,156 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "**Next Stage**: SCA (Software Composition Analysis) - Coming in next feature" >> $GITHUB_STEP_SUMMARY
+
+  # ====================================================
+  # ETAPA 3: ANÁLISIS SCA (Software Composition Analysis)
+  # ====================================================
+  sca-scan:
+    name: "🔍 3. SCA - Dependency Security Scan"
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-run-security == 'true'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          
+      - name: Install Dependencies
+        run: |
+          echo "📦 Installing dependencies for SCA analysis..."
+          npm ci --frozen-lockfile --prefer-offline
+          
+      - name: NPM Security Audit
+        run: |
+          echo "🔍 Running NPM security audit..."
+          npm audit --json > npm-audit.json || true
+          echo "✅ NPM audit completed"
+          
+      - name: Install Retire.js for Known Vulnerabilities
+        run: |
+          echo "🔧 Installing Retire.js for known vulnerability detection..."
+          npm install -g retire
+          
+      - name: Retire.js Dependency Check
+        run: |
+          echo "🔍 Running Retire.js dependency vulnerability check..."
+          retire --outputformat json --outputpath retire-results.json || true
+          echo "✅ Retire.js analysis completed"
+          
+      - name: Process SCA Results
+        id: sca-results
+        run: |
+          echo "📊 Processing SCA dependency analysis results..."
+          echo "## 🔍 SCA Dependency Analysis Results" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f npm-audit.json ]; then
+            CRITICAL=$(node -e "const audit = JSON.parse(require('fs').readFileSync('npm-audit.json', 'utf8')); console.log(audit.vulnerabilities ? Object.values(audit.vulnerabilities).filter(v => v.severity === 'critical').length : 0)")
+            HIGH=$(node -e "const audit = JSON.parse(require('fs').readFileSync('npm-audit.json', 'utf8')); console.log(audit.vulnerabilities ? Object.values(audit.vulnerabilities).filter(v => v.severity === 'high').length : 0)")
+            MODERATE=$(node -e "const audit = JSON.parse(require('fs').readFileSync('npm-audit.json', 'utf8')); console.log(audit.vulnerabilities ? Object.values(audit.vulnerabilities).filter(v => v.severity === 'moderate').length : 0)")
+            
+            echo "- **Critical Vulnerabilities**: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **High Vulnerabilities**: $HIGH" >> $GITHUB_STEP_SUMMARY
+            echo "- **Medium Vulnerabilities**: $MODERATE" >> $GITHUB_STEP_SUMMARY
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            echo "medium=$MODERATE" >> $GITHUB_OUTPUT
+            
+            echo "📈 SCA Results: Critical=$CRITICAL, High=$HIGH, Medium=$MODERATE"
+          else
+            echo "⚠️ No NPM audit results file found"
+            echo "critical=0" >> $GITHUB_OUTPUT
+            echo "high=0" >> $GITHUB_OUTPUT
+            echo "medium=0" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: SCA Security Gate
+        run: |
+          CRITICAL=${{ steps.sca-results.outputs.critical }}
+          HIGH=${{ steps.sca-results.outputs.high }}
+          MEDIUM=${{ steps.sca-results.outputs.medium }}
+          
+          echo "🔒 Applying SCA Security Gates with real dependency analysis results..."
+          echo "📊 Analysis Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
+          
+          # Strict security gates based on real dependency analysis results
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "❌ SECURITY GATE FAILED: $CRITICAL Critical dependency vulnerabilities found"
+            echo "🚨 Critical dependency vulnerabilities MUST be fixed before deployment"
+            echo "❌ **SCA Security Gate FAILED**: $CRITICAL Critical dependency vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚨 Critical Dependency Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to critical dependency vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the SCA artifacts and update vulnerable dependencies." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          if [ "$HIGH" -gt "0" ]; then
+            echo "❌ SECURITY GATE FAILED: $HIGH High severity dependency vulnerabilities found"
+            echo "🚨 High severity dependency vulnerabilities MUST be fixed before deployment"
+            echo "❌ **SCA Security Gate FAILED**: $HIGH High severity dependency vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ High Severity Dependency Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to high severity dependency vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the SCA artifacts and update vulnerable dependencies." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # For Medium vulnerabilities, provide detailed feedback but allow continuation with warning
+          if [ "$MEDIUM" -gt "0" ]; then
+            echo "⚠️ WARNING: $MEDIUM Medium severity dependency vulnerabilities found"
+            echo "📋 Consider updating these dependencies in future development cycles"
+            echo "⚠️ **SCA Warning**: $MEDIUM Medium severity dependency vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📋 Medium Severity Dependency Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "While not blocking deployment, these dependency issues should be addressed:" >> $GITHUB_STEP_SUMMARY
+            echo "- Review the SCA artifacts for detailed vulnerability findings" >> $GITHUB_STEP_SUMMARY
+            echo "- Plan dependency updates in upcoming development cycles" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitor these vulnerabilities for potential escalation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Pipeline continues** with warning status" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ] && [ "$MEDIUM" -eq "0" ]; then
+            echo "✅ SCA Security Gate PASSED - No dependency vulnerabilities found"
+            echo "✅ **SCA Security Gate PASSED** - Clean dependency analysis" >> $GITHUB_STEP_SUMMARY
+          elif [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ]; then
+            echo "✅ SCA Security Gate PASSED WITH WARNINGS - No critical or high severity dependency issues"
+            echo "✅ **SCA Security Gate PASSED** (with medium severity dependency warnings)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+      - name: Upload SCA Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sca-results
+          path: |
+            npm-audit.json
+            retire-results.json
+            
+      - name: SCA Stage Summary
+        if: always()
+        run: |
+          echo "## 🔍 SCA Stage Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Tools Used" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Audit**: Built-in Node.js dependency vulnerability scanner" >> $GITHUB_STEP_SUMMARY
+          echo "- **Retire.js**: JavaScript library vulnerability detection" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Security Gates Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- **Critical Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "- **High Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "- **Medium Vulnerabilities**: ⚠️ Warning if > 0 (Pipeline continues)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- **npm-audit.json**: NPM security audit results" >> $GITHUB_STEP_SUMMARY
+          echo "- **retire-results.json**: Retire.js vulnerability analysis results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Stage**: Docker Build & Container Security - Coming in next feature" >> $GITHUB_STEP_SUMMARY
