@@ -82,14 +82,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
           
-      - name: Install Dependencies (Frozen Lockfile)
+      - name: Install Dependencies (Legacy Peer Deps)
         run: |
-          echo "📦 Installing project dependencies using package-lock.json as source of truth..."
+          echo "📦 Installing project dependencies handling peer dependency conflicts..."
           
-          # Use npm ci with frozen lockfile for reproducible builds
-          npm ci --frozen-lockfile --prefer-offline --no-audit --no-fund
+          # Use npm ci with legacy peer deps for compatibility with React version conflicts
+          npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
           
-          echo "✅ Dependencies installed successfully from lockfile"
+          echo "✅ Dependencies installed successfully with legacy peer deps resolution"
           
       - name: Security Pipeline Check
         id: security-check
@@ -117,14 +117,14 @@ jobs:
           echo "### ✅ Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository Structure**: ✅ Valid" >> $GITHUB_STEP_SUMMARY
           echo "- **Package-lock.json**: ✅ Present and Valid" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dependencies**: ✅ Installed (Frozen Lockfile)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies**: ✅ Installed (Legacy Peer Deps)" >> $GITHUB_STEP_SUMMARY
           echo "- **Configuration**: ✅ Validated" >> $GITHUB_STEP_SUMMARY
           echo "- **Docker Files**: ✅ Present" >> $GITHUB_STEP_SUMMARY
           echo "- **Kubernetes Manifests**: ✅ Present" >> $GITHUB_STEP_SUMMARY
           echo "- **Dependency Integrity**: ✅ Verified" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔒 Security & Reproducibility Features" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frozen Lockfile**: Ensures reproducible builds" >> $GITHUB_STEP_SUMMARY
+          echo "- **Legacy Peer Deps**: Handles React version conflicts while maintaining security fixes" >> $GITHUB_STEP_SUMMARY
           echo "- **Package Integrity**: Validated JSON structure and consistency" >> $GITHUB_STEP_SUMMARY
           echo "- **Cache Optimization**: Node.js cache with lockfile dependency path" >> $GITHUB_STEP_SUMMARY
           echo "- **Dependency Verification**: Critical packages validated post-install" >> $GITHUB_STEP_SUMMARY
@@ -178,7 +178,7 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "📦 Installing dependencies for SAST analysis..."
-          npm ci --frozen-lockfile --prefer-offline
+          npm ci --legacy-peer-deps --prefer-offline
         
       - name: ESLint Security Analysis
         run: |
@@ -342,7 +342,7 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "📦 Installing dependencies for SCA analysis..."
-          npm ci --frozen-lockfile --prefer-offline
+          npm ci --legacy-peer-deps --prefer-offline
           
       - name: NPM Security Audit
         run: |

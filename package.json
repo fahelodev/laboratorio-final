@@ -15,7 +15,7 @@
     "@emotion/styled": "^11.8.1",
     "firebase": "^11.9.1",
     "firebase-admin": "^13.4.0",
-    "firebase-functions": "^3.18.1",
+    "firebase-functions": "^6.2.0",
     "framer-motion": "^6.2.8",
     "moment": "^2.29.1",
     "next": "^15.3.4",
