@@ -98,16 +98,21 @@ jobs:
           echo "run-security=true" >> $GITHUB_OUTPUT 
       
       - name: Environment Information Summary
+        env:
+          REPO_NAME: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          TARGET_ENV: ${{ github.event.inputs.environment || 'qa' }}
         run: |
           echo "## 📋 Repository Setup Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 Environment Information" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit SHA**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: $REPO_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: $BRANCH_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA**: \`$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Node.js Version**: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Application**: ${{ env.APP_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: ${{ github.event.inputs.environment || 'qa' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: $TARGET_ENV" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository Structure**: ✅ Valid" >> $GITHUB_STEP_SUMMARY
@@ -136,12 +141,17 @@ jobs:
           echo "**Laboratorio Final - Célula Movies | Eduardo Araya | DevSecOps Course**" >> $GITHUB_STEP_SUMMARY
           
       - name: Setup Complete Notification
+        env:
+          REPO_NAME: ${{ github.repository }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          TARGET_ENV: ${{ github.event.inputs.environment || 'qa' }}
         run: |
           echo "🎉 Pipeline setup phase completed successfully!"
-          echo "📊 Repository: ${{ github.repository }}"
-          echo "🌿 Branch: ${{ github.ref_name }}"
-          echo "🔖 Commit: ${{ github.sha }}"
-          echo "⚙️ Environment: ${{ github.event.inputs.environment || 'qa' }}"
+          echo "📊 Repository: $REPO_NAME"
+          echo "🌿 Branch: $BRANCH_NAME"
+          echo "🔖 Commit: $COMMIT_SHA"
+          echo "⚙️ Environment: $TARGET_ENV"
           echo ""
           echo "✅ Ready for security analysis and deployment phases"
           echo "🔄 Pipeline will be extended with additional security stages in upcoming features"
@@ -150,7 +160,7 @@ jobs:
   # ETAPA 2: ANÁLISIS SAST (Static Application Security Testing)
   # ====================================================
   sast-scan:
-    name: "🔒 2. SAST - Static Code Analysis"
+    name: "🔒 SAST - Static Code Analysis"
     runs-on: ubuntu-latest
     needs: setup
     if: needs.setup.outputs.should-run-security == 'true'
