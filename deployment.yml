@@ -1,22 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: Reddit-clone-deployment
+  name: laboratorio-final
   labels:
-    app: kuber-project
+    app: laboratorio-final-celula-movies
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: kuber-project
+      app: laboratorio-final-celula-movies
   template:
     metadata:
       labels: 
-        app: kuber-project
+        app: laboratorio-final-celula-movies
     
     spec:
+      # Pod-level security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
       containers:
       - name: result-app
-        image:
+        image: laboratorio-final-celula-movies:latest
+        # Container-level security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+              - ALL
         ports:
         - containerPort: 3000
