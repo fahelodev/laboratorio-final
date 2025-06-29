@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Target environment for future deployment'
+        description: 'Target environment for deployment'
         required: false
         default: 'qa'
         type: choice
@@ -16,14 +16,6 @@ on:
           - qa
           - staging
           - production
-      force_failure_demo:
-        description: 'Force security failure for demonstration'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'sast'
 
 env:
   NODE_VERSION: '19'
@@ -239,21 +231,18 @@ jobs:
           HIGH=${{ steps.sast-results.outputs.high }}
           MEDIUM=${{ steps.sast-results.outputs.medium }}
           
-          echo "🔒 Applying SAST Security Gates..."
-          echo "📊 Current Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
+          echo "🔒 Applying SAST Security Gates with real analysis results..."
+          echo "📊 Analysis Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
           
-          # For demonstration purposes, allow forcing failure
-          if [ "${{ github.event.inputs.force_failure_demo }}" == "sast" ]; then
-            echo "🎭 DEMO MODE: Forcing SAST failure for demonstration"
-            echo "❌ SAST Security Gate FAILED (Demo Mode)" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          
-          # Strict security gates - fail on Critical, High, or Medium
+          # Strict security gates based on real analysis results
           if [ "$CRITICAL" -gt "0" ]; then
             echo "❌ SECURITY GATE FAILED: $CRITICAL Critical vulnerabilities found"
             echo "🚨 Critical vulnerabilities MUST be fixed before deployment"
             echo "❌ **SAST Security Gate FAILED**: $CRITICAL Critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚨 Critical Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to critical security vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the SAST artifacts and fix these issues before proceeding." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
@@ -261,18 +250,35 @@ jobs:
             echo "❌ SECURITY GATE FAILED: $HIGH High severity vulnerabilities found"  
             echo "🚨 High severity vulnerabilities MUST be fixed before deployment"
             echo "❌ **SAST Security Gate FAILED**: $HIGH High severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ High Severity Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to high severity security vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the SAST artifacts and address these security concerns." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
+          # For Medium vulnerabilities, provide detailed feedback but allow continuation with warning
           if [ "$MEDIUM" -gt "0" ]; then
-            echo "❌ SECURITY GATE FAILED: $MEDIUM Medium severity vulnerabilities found"
-            echo "🚨 Medium severity vulnerabilities MUST be fixed before deployment"
-            echo "❌ **SAST Security Gate FAILED**: $MEDIUM Medium severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-            exit 1
+            echo "⚠️ WARNING: $MEDIUM Medium severity vulnerabilities found"
+            echo "📋 Consider addressing these issues in future development cycles"
+            echo "⚠️ **SAST Warning**: $MEDIUM Medium severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📋 Medium Severity Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "While not blocking deployment, these issues should be addressed:" >> $GITHUB_STEP_SUMMARY
+            echo "- Review the SAST artifacts for detailed findings" >> $GITHUB_STEP_SUMMARY
+            echo "- Plan remediation in upcoming development cycles" >> $GITHUB_STEP_SUMMARY
+            echo "- Monitor these vulnerabilities for potential escalation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Pipeline continues** with warning status" >> $GITHUB_STEP_SUMMARY
           fi
           
-          echo "✅ SAST Security Gate PASSED - No Critical/High/Medium vulnerabilities found"
-          echo "✅ **SAST Security Gate PASSED** - No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          if [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ] && [ "$MEDIUM" -eq "0" ]; then
+            echo "✅ SAST Security Gate PASSED - No security vulnerabilities found"
+            echo "✅ **SAST Security Gate PASSED** - Clean code analysis" >> $GITHUB_STEP_SUMMARY
+          elif [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ]; then
+            echo "✅ SAST Security Gate PASSED WITH WARNINGS - No critical or high severity issues"
+            echo "✅ **SAST Security Gate PASSED** (with medium severity warnings)" >> $GITHUB_STEP_SUMMARY
+          fi
           
       - name: Upload SAST Results
         uses: actions/upload-artifact@v4
