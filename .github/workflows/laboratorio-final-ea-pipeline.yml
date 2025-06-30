@@ -88,10 +88,11 @@ jobs:
         run: |
           echo "📦 Installing project dependencies handling peer dependency conflicts..."
           
-          # Use npm ci with legacy peer deps for compatibility with React version conflicts
-          npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund
+          # Clean install to apply security overrides (like fix-dependencies.sh)
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps --no-audit --no-fund
           
-          echo "✅ Dependencies installed successfully with legacy peer deps resolution"
+          echo "✅ Dependencies installed successfully with legacy peer deps resolution and security overrides"
           
       - name: Security Pipeline Check
         id: security-check
@@ -180,7 +181,8 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "📦 Installing dependencies for SAST analysis..."
-          npm ci --legacy-peer-deps --prefer-offline
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps --no-audit
         
       - name: ESLint Security Analysis
         run: |
@@ -344,7 +346,8 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "📦 Installing dependencies for SCA analysis..."
-          npm ci --legacy-peer-deps --prefer-offline
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps --no-audit
           
       - name: NPM Security Audit
         run: |
