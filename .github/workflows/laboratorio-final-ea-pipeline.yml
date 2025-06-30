@@ -832,7 +832,7 @@ jobs:
               echo '{"method":"nikto","target":"'$APP_URL'","status":"completed","findings":[],"timestamp":"'$(date -Iseconds)'"}' > /tmp/zap-reports/zap-results.json
               
               # Create comprehensive HTML report
-              cat > /tmp/zap-reports/zap-baseline-report.html << 'EOF'
+              cat > /tmp/zap-reports/zap-baseline-report.html << EOF
 <!DOCTYPE html>
 <html>
 <head>
@@ -852,7 +852,7 @@ jobs:
         <h1>🛡️ Dynamic Application Security Testing Report</h1>
         <p><strong>Target URL:</strong> $APP_URL</p>
         <p><strong>Scanner:</strong> Nikto (Lightweight DAST Tool)</p>
-        <p><strong>Timestamp:</strong> $(date)</p>
+        <p><strong>Timestamp:</strong> \$(date)</p>
         <p class="success">✅ Scan Completed Successfully</p>
     </div>
     
@@ -877,7 +877,7 @@ EOF
                 echo "This may indicate that no significant vulnerabilities were found." >> /tmp/zap-reports/zap-baseline-report.html
               fi
               
-              cat >> /tmp/zap-reports/zap-baseline-report.html << 'EOF'
+              cat >> /tmp/zap-reports/zap-baseline-report.html << EOF
         </pre>
     </div>
     
@@ -899,7 +899,7 @@ EOF
               echo '{"method":"connectivity-test","target":"'$APP_URL'","status":"failed","error":"Application not accessible","timestamp":"'$(date -Iseconds)'"}' > /tmp/zap-reports/zap-results.json
               
               # Create connectivity failure report
-              cat > /tmp/zap-reports/zap-baseline-report.html << 'EOF'
+              cat > /tmp/zap-reports/zap-baseline-report.html << EOF
 <!DOCTYPE html>
 <html>
 <head>
@@ -915,7 +915,7 @@ EOF
         <h1>⚠️ DAST Connectivity Report</h1>
         <p><strong>Target URL:</strong> $APP_URL</p>
         <p><strong>Status:</strong> <span class="warning">Application Not Accessible</span></p>
-        <p><strong>Timestamp:</strong> $(date)</p>
+        <p><strong>Timestamp:</strong> \$(date)</p>
     </div>
     
     <div>
@@ -966,7 +966,7 @@ EOF
         <h1>🛡️ Dynamic Application Security Testing Report</h1>
         <p><strong>Target URL:</strong> $APP_URL</p>
         <p><strong>Scan Method:</strong> $ZAP_METHOD</p>
-        <p><strong>Timestamp:</strong> $(date)</p>
+        <p><strong>Timestamp:</strong> \$(date)</p>
         <p class="status">✅ DAST Analysis Completed</p>
     </div>
     
@@ -1190,7 +1190,7 @@ EOF
         <h1>🛡️ DAST Report - Fallback Mode</h1>
         <p><strong>Target URL:</strong> $APP_URL</p>
         <p><strong>Method:</strong> $ZAP_METHOD</p>
-        <p><strong>Generated:</strong> $(date)</p>
+        <p><strong>Generated:</strong> \$(date)</p>
         <p class="status">✅ DAST Analysis Completed</p>
     </div>
     
