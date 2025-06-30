@@ -878,17 +878,17 @@ jobs:
               fi
               
               cat >> /tmp/zap-reports/zap-baseline-report.html << EOF
-        </pre>
-    </div>
-    
-    <div class="section">
-        <h2>📈 Summary</h2>
-        <p>The Nikto scan has been completed as part of the DevSecOps pipeline's DAST analysis.</p>
-        <p>This lightweight scanning approach ensures that basic security checks are always performed, even when more comprehensive tools are not available.</p>
-    </div>
-</body>
-</html>
-EOF
+                  </pre>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>📈 Summary</h2>
+                      <p>The Nikto scan has been completed as part of the DevSecOps pipeline's DAST analysis.</p>
+                      <p>This lightweight scanning approach ensures that basic security checks are always performed, even when more comprehensive tools are not available.</p>
+                  </div>
+              </body>
+              </html>
+              EOF
               
               echo "✅ Nikto scan completed and reports generated"
               
