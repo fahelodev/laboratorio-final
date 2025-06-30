@@ -10,12 +10,8 @@ RUN apk update && apk upgrade --no-cache
 # Copy package files first for better Docker layer caching
 COPY package*.json ./
 
-# Install dependencies and clean caches to reduce image size
-RUN rm -rf node_modules package-lock.json \
-    && npm install --legacy-peer-deps --no-audit --progress=false \
-    && npm cache clean --force \
-    && rm -rf /root/.npm/_cacache \
-    && rm -rf /tmp/*
+# Install dependencies with security fixes
+RUN npm install --legacy-peer-deps
 
 # Copy application code
 COPY . .
