@@ -10,9 +10,9 @@ RUN apk update && apk upgrade --no-cache
 # Copy package files first for better Docker layer caching
 COPY package*.json ./
 
-# Install dependencies with security fixes and legacy peer deps for compatibility
-RUN npm install --legacy-peer-deps --no-audit --progress=false \
-    && npm cache clean --force
+# install dependencies
+RUN rm -rf node_modules package-lock.json \
+    && npm install --legacy-peer-deps --no-audit --progress=false
 
 # Copy application code
 COPY . .
