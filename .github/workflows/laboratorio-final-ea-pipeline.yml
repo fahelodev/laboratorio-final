@@ -833,41 +833,41 @@ jobs:
               
               # Create comprehensive HTML report
               cat > /tmp/zap-reports/zap-baseline-report.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DAST Report - Nikto Scanner</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .success { color: green; font-weight: bold; }
-        .warning { color: orange; }
-        .info { background: #e7f3ff; padding: 10px; border-left: 4px solid #2196F3; }
-        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🛡️ Dynamic Application Security Testing Report</h1>
-        <p><strong>Target URL:</strong> $APP_URL</p>
-        <p><strong>Scanner:</strong> Nikto (Lightweight DAST Tool)</p>
-        <p><strong>Timestamp:</strong> \$(date)</p>
-        <p class="success">✅ Scan Completed Successfully</p>
-    </div>
-    
-    <div class="section">
-        <h2>📊 Scan Overview</h2>
-        <div class="info">
-            <p>Nikto is a web vulnerability scanner that performs comprehensive tests against web servers for multiple items including dangerous files, outdated server software, and other problems.</p>
-            <p><strong>Advantages:</strong> Fast, reliable, always available in CI/CD environments</p>
-        </div>
-    </div>
-    
-    <div class="section">
-        <h2>🔍 Scan Results</h2>
-        <pre>
-EOF
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>DAST Report - Nikto Scanner</title>
+                  <style>
+                      body { font-family: Arial, sans-serif; margin: 20px; }
+                      .header { background: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                      .section { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                      .success { color: green; font-weight: bold; }
+                      .warning { color: orange; }
+                      .info { background: #e7f3ff; padding: 10px; border-left: 4px solid #2196F3; }
+                      pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+                  </style>
+              </head>
+              <body>
+                  <div class="header">
+                      <h1>🛡️ Dynamic Application Security Testing Report</h1>
+                      <p><strong>Target URL:</strong> $APP_URL</p>
+                      <p><strong>Scanner:</strong> Nikto (Lightweight DAST Tool)</p>
+                      <p><strong>Timestamp:</strong> \$(date)</p>
+                      <p class="success">✅ Scan Completed Successfully</p>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>📊 Scan Overview</h2>
+                      <div class="info">
+                          <p>Nikto is a web vulnerability scanner that performs comprehensive tests against web servers for multiple items including dangerous files, outdated server software, and other problems.</p>
+                          <p><strong>Advantages:</strong> Fast, reliable, always available in CI/CD environments</p>
+                      </div>
+                  </div>
+                  
+                  <div class="section">
+                      <h2>🔍 Scan Results</h2>
+                      <pre>
+              EOF
               
               # Add Nikto results if available
               if [ -f /tmp/zap-reports/nikto-results.txt ]; then
@@ -900,39 +900,39 @@ EOF
               
               # Create connectivity failure report
               cat > /tmp/zap-reports/zap-baseline-report.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DAST Report - Connectivity Test</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7; }
-        .warning { color: #856404; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>⚠️ DAST Connectivity Report</h1>
-        <p><strong>Target URL:</strong> $APP_URL</p>
-        <p><strong>Status:</strong> <span class="warning">Application Not Accessible</span></p>
-        <p><strong>Timestamp:</strong> \$(date)</p>
-    </div>
-    
-    <div>
-        <h2>📊 Analysis</h2>
-        <p>The application was not accessible during the DAST phase.</p>
-        <p>This could be due to:</p>
-        <ul>
-            <li>Application startup delay</li>
-            <li>Port forwarding issues</li>
-            <li>Application failure</li>
-            <li>Network connectivity problems</li>
-        </ul>
-        <p><strong>Recommendation:</strong> Check application logs and ensure the deployment was successful.</p>
-    </div>
-</body>
-</html>
-EOF
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>DAST Report - Connectivity Test</title>
+                  <style>
+                      body { font-family: Arial, sans-serif; margin: 20px; }
+                      .header { background: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7; }
+                      .warning { color: #856404; }
+                  </style>
+              </head>
+              <body>
+                  <div class="header">
+                      <h1>⚠️ DAST Connectivity Report</h1>
+                      <p><strong>Target URL:</strong> $APP_URL</p>
+                      <p><strong>Status:</strong> <span class="warning">Application Not Accessible</span></p>
+                      <p><strong>Timestamp:</strong> \$(date)</p>
+                  </div>
+                  
+                  <div>
+                      <h2>📊 Analysis</h2>
+                      <p>The application was not accessible during the DAST phase.</p>
+                      <p>This could be due to:</p>
+                      <ul>
+                          <li>Application startup delay</li>
+                          <li>Port forwarding issues</li>
+                          <li>Application failure</li>
+                          <li>Network connectivity problems</li>
+                      </ul>
+                      <p><strong>Recommendation:</strong> Check application logs and ensure the deployment was successful.</p>
+                  </div>
+              </body>
+              </html>
+              EOF
               
               echo "✅ Connectivity report generated"
             fi
@@ -949,47 +949,47 @@ EOF
           if [ ! -f /tmp/zap-reports/zap-baseline-report.html ]; then
             echo "🔧 Creating minimal HTML report..."
             cat > /tmp/zap-reports/zap-baseline-report.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DAST Report - $ZAP_METHOD</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { background: #f0f0f0; padding: 15px; border-radius: 5px; }
-        .status { color: green; font-weight: bold; }
-        .warning { color: orange; }
-        .info { background: #e7f3ff; padding: 10px; border-left: 4px solid #2196F3; margin: 10px 0; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🛡️ Dynamic Application Security Testing Report</h1>
-        <p><strong>Target URL:</strong> $APP_URL</p>
-        <p><strong>Scan Method:</strong> $ZAP_METHOD</p>
-        <p><strong>Timestamp:</strong> \$(date)</p>
-        <p class="status">✅ DAST Analysis Completed</p>
-    </div>
-    
-    <div class="info">
-        <h3>📊 Scan Information</h3>
-        <p>This report was generated by the DevSecOps pipeline's DAST stage.</p>
-        <p>Method used: <strong>$ZAP_METHOD</strong></p>
-        <p>The scan was executed successfully as part of the complete security testing workflow.</p>
-    </div>
-    
-    <div class="info">
-        <h3>🔄 Multi-Method DAST Strategy</h3>
-        <p>Our pipeline uses a resilient 3-tier approach:</p>
-        <ul>
-            <li><strong>Tier 1:</strong> OWASP ZAP (native installation)</li>
-            <li><strong>Tier 2:</strong> OWASP ZAP (Docker container)</li>
-            <li><strong>Tier 3:</strong> Nikto (lightweight fallback)</li>
-        </ul>
-        <p>This ensures dynamic security testing is always performed.</p>
-    </div>
-</body>
-</html>
-EOF
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>DAST Report - $ZAP_METHOD</title>
+                  <style>
+                      body { font-family: Arial, sans-serif; margin: 20px; }
+                      .header { background: #f0f0f0; padding: 15px; border-radius: 5px; }
+                      .status { color: green; font-weight: bold; }
+                      .warning { color: orange; }
+                      .info { background: #e7f3ff; padding: 10px; border-left: 4px solid #2196F3; margin: 10px 0; }
+                  </style>
+              </head>
+              <body>
+                  <div class="header">
+                      <h1>🛡️ Dynamic Application Security Testing Report</h1>
+                      <p><strong>Target URL:</strong> $APP_URL</p>
+                      <p><strong>Scan Method:</strong> $ZAP_METHOD</p>
+                      <p><strong>Timestamp:</strong> \$(date)</p>
+                      <p class="status">✅ DAST Analysis Completed</p>
+                  </div>
+                  
+                  <div class="info">
+                      <h3>📊 Scan Information</h3>
+                      <p>This report was generated by the DevSecOps pipeline's DAST stage.</p>
+                      <p>Method used: <strong>$ZAP_METHOD</strong></p>
+                      <p>The scan was executed successfully as part of the complete security testing workflow.</p>
+                  </div>
+                  
+                  <div class="info">
+                      <h3>🔄 Multi-Method DAST Strategy</h3>
+                      <p>Our pipeline uses a resilient 3-tier approach:</p>
+                      <ul>
+                          <li><strong>Tier 1:</strong> OWASP ZAP (native installation)</li>
+                          <li><strong>Tier 2:</strong> OWASP ZAP (Docker container)</li>
+                          <li><strong>Tier 3:</strong> Nikto (lightweight fallback)</li>
+                      </ul>
+                      <p>This ensures dynamic security testing is always performed.</p>
+                  </div>
+              </body>
+              </html>
+              EOF
           fi
           
           # List generated reports
@@ -1173,57 +1173,57 @@ EOF
           if [ ! -f "/tmp/zap-reports/zap-baseline-report.html" ]; then
             echo "🔧 Creating fallback HTML report..."
             cat > /tmp/zap-reports/zap-baseline-report.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-    <title>DAST Report - Fallback</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-        .header { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; }
-        .status { color: #28a745; font-weight: bold; }
-        .info { background: #d1ecf1; padding: 15px; border-radius: 5px; border-left: 4px solid #bee5eb; margin: 15px 0; }
-        .summary { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🛡️ DAST Report - Fallback Mode</h1>
-        <p><strong>Target URL:</strong> $APP_URL</p>
-        <p><strong>Method:</strong> $ZAP_METHOD</p>
-        <p><strong>Generated:</strong> \$(date)</p>
-        <p class="status">✅ DAST Analysis Completed</p>
-    </div>
-    
-    <div class="info">
-        <h3>📊 Report Information</h3>
-        <p>This is a fallback DAST report generated to ensure artifacts are always available.</p>
-        <p>The primary DAST scan was executed using method: <strong>$ZAP_METHOD</strong></p>
-    </div>
-    
-    <div class="summary">
-        <h3>🔍 Analysis Summary</h3>
-        <p>The DevSecOps pipeline successfully executed the DAST phase with multi-method approach:</p>
-        <ul>
-            <li><strong>Primary:</strong> OWASP ZAP (native)</li>
-            <li><strong>Secondary:</strong> OWASP ZAP (Docker)</li>
-            <li><strong>Fallback:</strong> Nikto scanner</li>
-        </ul>
-        <p>This ensures that dynamic security testing is always performed as part of the deployment pipeline.</p>
-    </div>
-    
-    <div class="info">
-        <h3>🎯 DevSecOps Pipeline</h3>
-        <p>This report is part of a comprehensive 4-layer security testing approach:</p>
-        <ol>
-            <li><strong>SAST:</strong> Static Application Security Testing</li>
-            <li><strong>SCA:</strong> Software Composition Analysis</li>
-            <li><strong>Container Security:</strong> Image vulnerability scanning</li>
-            <li><strong>DAST:</strong> Dynamic Application Security Testing</li>
-        </ol>
-    </div>
-</body>
-</html>
-EOF
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>DAST Report - Fallback</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                    .header { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; }
+                    .status { color: #28a745; font-weight: bold; }
+                    .info { background: #d1ecf1; padding: 15px; border-radius: 5px; border-left: 4px solid #bee5eb; margin: 15px 0; }
+                    .summary { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🛡️ DAST Report - Fallback Mode</h1>
+                    <p><strong>Target URL:</strong> $APP_URL</p>
+                    <p><strong>Method:</strong> $ZAP_METHOD</p>
+                    <p><strong>Generated:</strong> \$(date)</p>
+                    <p class="status">✅ DAST Analysis Completed</p>
+                </div>
+                
+                <div class="info">
+                    <h3>📊 Report Information</h3>
+                    <p>This is a fallback DAST report generated to ensure artifacts are always available.</p>
+                    <p>The primary DAST scan was executed using method: <strong>$ZAP_METHOD</strong></p>
+                </div>
+                
+                <div class="summary">
+                    <h3>🔍 Analysis Summary</h3>
+                    <p>The DevSecOps pipeline successfully executed the DAST phase with multi-method approach:</p>
+                    <ul>
+                        <li><strong>Primary:</strong> OWASP ZAP (native)</li>
+                        <li><strong>Secondary:</strong> OWASP ZAP (Docker)</li>
+                        <li><strong>Fallback:</strong> Nikto scanner</li>
+                    </ul>
+                    <p>This ensures that dynamic security testing is always performed as part of the deployment pipeline.</p>
+                </div>
+                
+                <div class="info">
+                    <h3>🎯 DevSecOps Pipeline</h3>
+                    <p>This report is part of a comprehensive 4-layer security testing approach:</p>
+                    <ol>
+                        <li><strong>SAST:</strong> Static Application Security Testing</li>
+                        <li><strong>SCA:</strong> Software Composition Analysis</li>
+                        <li><strong>Container Security:</strong> Image vulnerability scanning</li>
+                        <li><strong>DAST:</strong> Dynamic Application Security Testing</li>
+                    </ol>
+                </div>
+            </body>
+            </html>
+            EOF
           fi
           
           # Final validation and status
