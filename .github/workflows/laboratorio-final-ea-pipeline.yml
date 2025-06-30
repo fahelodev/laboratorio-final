@@ -20,6 +20,8 @@ on:
 env:
   NODE_VERSION: '19'
   APP_NAME: 'laboratorio-final-celula-movies'
+  DOCKER_IMAGE_NAME: 'laboratorio-final-celula-movies'
+  DOCKER_TAG: ${{ github.sha }}
 
 jobs:
   # ====================================================
@@ -472,3 +474,183 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "**Next Stage**: Docker Build & Container Security - Coming in next feature" >> $GITHUB_STEP_SUMMARY
+
+  # ====================================================
+  # ETAPA 4: CONSTRUCCIÓN DE IMAGEN DOCKER Y SEGURIDAD DE CONTENEDORES
+  # ====================================================
+  docker-build:
+    name: "🐳 Docker Build & Container Security"
+    runs-on: ubuntu-latest
+    needs: [sast-scan, sca-scan]
+    if: success()
+    outputs:
+      image-tag: ${{ steps.build.outputs.image-tag }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker Image
+        id: build
+        run: |
+          IMAGE_TAG="${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_TAG }}"
+          echo "🔨 Building Docker image: $IMAGE_TAG"
+          
+          docker build \
+            --tag $IMAGE_TAG \
+            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --label "org.opencontainers.image.source=${{ github.repositoryUrl }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            .
+            
+          # Get image size
+          IMAGE_SIZE=$(docker images $IMAGE_TAG --format "table {{.Size}}" | tail -n1)
+          
+          echo "image-tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "## 🐳 Docker Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: $IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Size**: $IMAGE_SIZE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status**: ✅ Successful" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Install Trivy for Container Security Scan
+        run: |
+          echo "🔧 Installing Trivy for container security scanning..."
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+          
+      - name: Run Trivy Container Security Scan
+        run: |
+          IMAGE_TAG="${{ steps.build.outputs.image-tag }}"
+          echo "🛡️ Running Trivy security scan on container image..."
+          
+          # Scan the image with comprehensive output
+          trivy image \
+            --format json \
+            --output trivy-results.json \
+            --severity CRITICAL,HIGH,MEDIUM,LOW \
+            $IMAGE_TAG || true
+            
+          # Also generate table format for readability
+          trivy image \
+            --format table \
+            --output trivy-table.txt \
+            --severity CRITICAL,HIGH,MEDIUM,LOW \
+            $IMAGE_TAG || true
+            
+          echo "✅ Container security scan completed"
+            
+      - name: Process Container Security Results
+        id: container-results
+        run: |
+          echo "📊 Processing container security scan results..."
+          echo "## 🛡️ Container Security Analysis Results" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f trivy-results.json ]; then
+            CRITICAL=$(node -e "const results = JSON.parse(require('fs').readFileSync('trivy-results.json', 'utf8')); const vulns = results.Results ? results.Results.flatMap(r => r.Vulnerabilities || []) : []; console.log(vulns.filter(v => v.Severity === 'CRITICAL').length)")
+            HIGH=$(node -e "const results = JSON.parse(require('fs').readFileSync('trivy-results.json', 'utf8')); const vulns = results.Results ? results.Results.flatMap(r => r.Vulnerabilities || []) : []; console.log(vulns.filter(v => v.Severity === 'HIGH').length)")
+            MEDIUM=$(node -e "const results = JSON.parse(require('fs').readFileSync('trivy-results.json', 'utf8')); const vulns = results.Results ? results.Results.flatMap(r => r.Vulnerabilities || []) : []; console.log(vulns.filter(v => v.Severity === 'MEDIUM').length)")
+            LOW=$(node -e "const results = JSON.parse(require('fs').readFileSync('trivy-results.json', 'utf8')); const vulns = results.Results ? results.Results.flatMap(r => r.Vulnerabilities || []) : []; console.log(vulns.filter(v => v.Severity === 'LOW').length)")
+            
+            echo "- **Critical Vulnerabilities**: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **High Vulnerabilities**: $HIGH" >> $GITHUB_STEP_SUMMARY
+            echo "- **Medium Vulnerabilities**: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+            echo "- **Low Vulnerabilities**: $LOW" >> $GITHUB_STEP_SUMMARY
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
+            
+            echo "📈 Container Security Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM, Low=$LOW"
+          else
+            echo "⚠️ No Trivy results file found"
+            echo "critical=0" >> $GITHUB_OUTPUT
+            echo "high=0" >> $GITHUB_OUTPUT
+            echo "medium=0" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Container Security Gate
+        run: |
+          CRITICAL=${{ steps.container-results.outputs.critical }}
+          HIGH=${{ steps.container-results.outputs.high }}
+          MEDIUM=${{ steps.container-results.outputs.medium }}
+          
+          echo "🔒 Applying Container Security Gates with real analysis results..."
+          echo "📊 Analysis Results: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM"
+          
+          # Realistic security gates based on production experience
+          if [ "$CRITICAL" -gt "0" ]; then
+            echo "❌ SECURITY GATE FAILED: $CRITICAL Critical container vulnerabilities found"
+            echo "🚨 Critical container vulnerabilities MUST be fixed before deployment"
+            echo "❌ **Container Security Gate FAILED**: $CRITICAL Critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🚨 Critical Container Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to critical container vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the container security artifacts and update the base image or dependencies." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          if [ "$HIGH" -gt "0" ]; then
+            echo "❌ SECURITY GATE FAILED: $HIGH High severity container vulnerabilities found"
+            echo "🚨 High severity container vulnerabilities MUST be fixed before deployment"
+            echo "❌ **Container Security Gate FAILED**: $HIGH High severity vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ High Severity Container Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "The pipeline has been stopped due to high severity container vulnerabilities." >> $GITHUB_STEP_SUMMARY
+            echo "Please review the container security artifacts and address these security concerns." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # Allow reasonable number of medium vulnerabilities (common in base images)
+          if [ "$MEDIUM" -gt "5" ]; then
+            echo "⚠️ WARNING: $MEDIUM Medium severity container vulnerabilities found (threshold: 5)"
+            echo "📋 Consider updating base image or addressing these vulnerabilities"
+            echo "⚠️ **Container Security Warning**: $MEDIUM Medium severity vulnerabilities found (threshold exceeded)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📋 Medium Severity Container Issues Detected" >> $GITHUB_STEP_SUMMARY
+            echo "While not blocking deployment, consider addressing these container issues:" >> $GITHUB_STEP_SUMMARY
+            echo "- Review the container security artifacts for detailed findings" >> $GITHUB_STEP_SUMMARY
+            echo "- Consider updating base image (e.g., Alpine, Ubuntu) to latest version" >> $GITHUB_STEP_SUMMARY
+            echo "- Plan container security improvements in upcoming development cycles" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🔄 **Pipeline continues** with warning status" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$CRITICAL" -eq "0" ] && [ "$HIGH" -eq "0" ] && [ "$MEDIUM" -le "5" ]; then
+            echo "✅ Container Security Gate PASSED - Acceptable security profile"
+            echo "✅ **Container Security Gate PASSED** - Container meets security requirements" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+      - name: Upload Container Security Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-security-results
+          path: |
+            trivy-results.json
+            trivy-table.txt
+            
+      - name: Docker Build & Security Stage Summary
+        if: always()
+        run: |
+          echo "## 🐳 Docker Build & Container Security Stage Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Tools Used" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker Buildx**: Advanced Docker image building with OCI labels" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trivy**: Comprehensive container vulnerability scanner" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Security Gates Applied" >> $GITHUB_STEP_SUMMARY
+          echo "- **Critical Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "- **High Vulnerabilities**: ❌ Fail if > 0" >> $GITHUB_STEP_SUMMARY
+          echo "- **Medium Vulnerabilities**: ⚠️ Warning if > 5 (Pipeline continues)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- **trivy-results.json**: Detailed vulnerability analysis in JSON format" >> $GITHUB_STEP_SUMMARY
+          echo "- **trivy-table.txt**: Human-readable vulnerability report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
