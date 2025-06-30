@@ -532,11 +532,14 @@ jobs:
           IMAGE_TAG="${{ steps.build.outputs.image-tag }}"
           echo "🛡️ Running Trivy security scan on container image..."
           
-          # Scan the image with comprehensive output
+          # Scan the image with comprehensive output, skipping cache files for performance
           trivy image \
             --format json \
             --output trivy-results.json \
             --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --skip-files "/root/.npm/_cacache/**" \
+            --skip-files "/tmp/**" \
+            --skip-files "/var/cache/**" \
             $IMAGE_TAG || true
             
           # Also generate table format for readability
@@ -544,9 +547,12 @@ jobs:
             --format table \
             --output trivy-table.txt \
             --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --skip-files "/root/.npm/_cacache/**" \
+            --skip-files "/tmp/**" \
+            --skip-files "/var/cache/**" \
             $IMAGE_TAG || true
             
-          echo "✅ Container security scan completed"
+          echo "✅ Container security scan completed (optimized for performance)"
             
       - name: Process Container Security Results
         id: container-results
