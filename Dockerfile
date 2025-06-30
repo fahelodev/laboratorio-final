@@ -3,7 +3,7 @@ FROM node:19-alpine3.15
 WORKDIR /reddit-clone
 
 COPY . /reddit-clone
-RUN npm install 
+RUN npm install --legacy-peer-deps 
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
