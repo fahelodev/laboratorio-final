@@ -1152,22 +1152,22 @@ jobs:
           if [ ! -f "/tmp/zap-reports/zap-results.json" ]; then
             echo "🔧 Creating fallback results file..."
             cat > /tmp/zap-reports/zap-results.json << EOF
-{
-  "method": "$ZAP_METHOD",
-  "target": "$APP_URL",
-  "status": "fallback",
-  "message": "DAST completed with minimal reporting",
-  "timestamp": "$(date -Iseconds)",
-  "pipeline": "laboratorio-final-ea-pipeline",
-  "findings": [],
-  "summary": {
-    "high": 0,
-    "medium": 0,
-    "low": 0,
-    "info": 0
-  }
-}
-EOF
+            {
+              "method": "$ZAP_METHOD",
+              "target": "$APP_URL",
+              "status": "fallback",
+              "message": "DAST completed with minimal reporting",
+              "timestamp": "$(date -Iseconds)",
+              "pipeline": "laboratorio-final-ea-pipeline",
+              "findings": [],
+              "summary": {
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "info": 0
+              }
+            }
+            EOF
           fi
           
           if [ ! -f "/tmp/zap-reports/zap-baseline-report.html" ]; then
