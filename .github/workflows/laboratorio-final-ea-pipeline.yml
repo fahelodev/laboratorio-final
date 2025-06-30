@@ -663,3 +663,73 @@ jobs:
           echo "- **trivy-table.txt**: Human-readable vulnerability report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
+
+  # ====================================================
+  # ETAPA 5: DESPLIEGUE EN MINIKUBE
+  # ====================================================
+  deploy:
+    name: "🚀 Deploy to Minikube"
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: success()
+    outputs:
+      app-url: ${{ steps.deploy.outputs.app-url }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          minikube-version: 1.32.0
+          kubernetes-version: 1.28.3
+          driver: docker
+          
+      - name: Deploy to Kubernetes
+        id: deploy
+        run: |
+          IMAGE_TAG="${{ needs.docker-build.outputs.image-tag }}"
+          
+          # Load image into minikube
+          docker save $IMAGE_TAG | minikube image load -
+          
+          # Update deployment.yml with the correct image
+          sed -i "s|image: .*|image: $IMAGE_TAG|g" deployment.yml
+          
+          # Apply Kubernetes manifests
+          kubectl apply -f deployment.yml
+          kubectl apply -f service.yml
+          kubectl apply -f ingress.yml
+          
+          # Wait for deployment to be ready
+          kubectl wait --for=condition=available --timeout=300s deployment/laboratorio-final
+          
+          # Get service information
+          kubectl get services
+          kubectl get pods
+          
+          # Setup port forwarding for testing
+          kubectl port-forward service/laboratorio-final-service 3000:3000 &
+          sleep 10
+          
+          APP_URL="http://localhost:3000"
+          echo "app-url=$APP_URL" >> $GITHUB_OUTPUT
+          
+          echo "## 🚀 Deployment Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Deployed successfully ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: $IMAGE_TAG" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: $APP_URL" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Health Check
+        run: |
+          APP_URL="${{ steps.deploy.outputs.app-url }}"
+          
+          # Wait a bit more for the app to be fully ready
+          sleep 15
+          
+          # Perform health check
+          if curl -f "$APP_URL" > /dev/null 2>&1; then
+            echo "✅ Health check PASSED - Application is responding"
+          else
+            echo "⚠️ Health check WARNING - Application may still be starting"
+          fi
