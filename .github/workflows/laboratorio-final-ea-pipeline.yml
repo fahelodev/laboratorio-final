@@ -18,7 +18,7 @@ on:
           - production
 
 env:
-  NODE_VERSION: '19'
+  NODE_VERSION: '20'
   APP_NAME: 'laboratorio-final-celula-movies'
   DOCKER_IMAGE_NAME: 'laboratorio-final-celula-movies'
   DOCKER_TAG: ${{ github.sha }}
